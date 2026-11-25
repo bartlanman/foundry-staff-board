@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Staff Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one dark board for dim bars. Header with clock, then Today (large), Next 7 days, Later (compact by month). */
+:root{
+  --bg:#15171b; --panel:#1e2127; --line:#2e323a; --ink:#eceae4; --muted:#9a9ca3;
+  --copper:#d08a4f; --good:#5fbf86; --warn:#e2b144; --bad:#e0675a; --private:#8f9bd6;
+  --display:"Oswald","Arial Narrow",Arial,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4}
+body{padding:16px clamp(16px,2.5vw,32px) 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--copper);padding-bottom:12px;margin-bottom:20px}
+h1{font-family:var(--display);font-weight:600;font-size:30px;letter-spacing:.04em;text-transform:uppercase;margin:0}
+h1 span{color:var(--copper)}
+.clock{font-family:var(--display);font-size:26px;font-variant-numeric:tabular-nums;text-align:right}
+.clock small{display:block;font-family:var(--body);font-size:13px;color:var(--muted)}
+.fresh{font-size:13px;color:var(--muted)}
+.fresh.stale{color:var(--warn);font-weight:600}
+h2{font-family:var(--display);font-weight:500;font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px;text-wrap:balance}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--copper);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card.private{border-left-color:var(--private)}
+.card.free,.card.door{border-left-color:var(--good)}
+.card.confirmed{border-left-color:var(--warn)}
+.card.today{padding:18px 20px}
+.top{display:flex;gap:14px;align-items:flex-start}
+.date{flex:0 0 64px;text-align:center;background:var(--bg);border-radius:6px;padding:6px 0}
+.date b{display:block;font-family:var(--display);font-size:28px;line-height:1}
+.date i{display:block;font-style:normal;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.title{font-family:var(--display);font-weight:500;font-size:22px;line-height:1.15;margin:0;text-wrap:balance}
+.today .title{font-size:28px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin-top:4px}
+.meta strong{color:var(--ink);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.chip.ticketed{color:var(--copper)} .chip.free,.chip.door{color:var(--good)} .chip.private{color:var(--private)} .chip.confirmed{color:var(--warn)}
+.sum{font-size:14px;color:#c9c7c1;max-width:70ch;margin:0}
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+.bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;min-width:80px}
+.bar span{display:block;height:100%;background:var(--copper)}
+.bar span.full{background:var(--bad)} .bar span.high{background:var(--warn)}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:4px;margin-left:6px;white-space:nowrap}
+.tag.out{background:var(--bad);color:#1a0d0b} .tag.low{background:var(--warn);color:#1d1606}
+.total{font-size:14px;color:var(--muted)} .total strong{color:var(--ink);font-size:16px}
+.later{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.row{display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);border-left:4px solid var(--copper)}
+.row:last-child{border-bottom:0}
+.row.private{border-left-color:var(--private)} .row.free,.row.door{border-left-color:var(--good)} .row.confirmed{border-left-color:var(--warn)}
+.row .d{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
+.row .d i{display:block;font-style:normal;font-family:var(--body);font-size:12px;color:var(--muted)}
+.row .n{font-weight:500}
+.row .tiers{font-size:13px;color:var(--muted);margin-top:2px}
+.row .tiers b{color:var(--ink);font-weight:500}
+.row .s{font-size:14px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:15px;padding:14px;background:var(--panel);border-radius:8px;border:1px dashed var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:28px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+@media (max-width:520px){.grid{grid-template-columns:1fr}.row{grid-template-columns:72px 1fr}.row .s{grid-column:2;text-align:left}}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .2s}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>The Foundry <span>·</span> Staff Board</h1>
+    <div class="fresh" id="fresh"></div>
+  </div>
+  <div class="clock" id="clock"></div>
+</header>
+<main id="app"></main>
+<div class="legend">
+  <span style="--c:var(--copper)">Ticketed show</span>
+  <span style="--c:var(--good)">Free / pay at door</span>
+  <span style="--c:var(--private)">Private event</span>
+  <span style="--c:var(--warn)">Confirmed, not on sale yet</span>
+</div>
+<script>
+const FEED = "https://didvhuehpblgbvunoayu.supabase.co/functions/v1/staff-board";
+let DATA = {generated: null, events: []};
+let FEED_OK = true, FEED_ERR = "";
+async function load(){
+  try {
+    const r = await fetch(FEED, {cache: "no-store"});
+    const j = await r.json();
+    if (j && Array.isArray(j.events) && (j.generated || !DATA.generated)) DATA = j;
+    FEED_OK = r.ok && !j.error; FEED_ERR = j.error || (r.ok ? "" : "HTTP " + r.status);
+  } catch (e) { FEED_OK = false; FEED_ERR = "offline"; }
+  render();
+}
+const TZ = "America/New_York";
+const fmt = (d, o) => new Intl.DateTimeFormat("en-US", Object.assign({timeZone: TZ}, o)).format(d);
+const dayKey = d => fmt(d, {year:"numeric", month:"2-digit", day:"2-digit"});
+const time = d => fmt(d, {hour:"numeric", minute:"2-digit"});
+const money = c => "$" + (c % 100 ? (c/100).toFixed(2) : (c/100).toFixed(0));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KIND = {ticketed:"Ticketed", free:"Free · RSVP", door:"Pay at door", private:"Private event", confirmed:"Not on sale yet"};
+
+function tierPrice(t){ return t.price > 0 ? money(t.price) : (/\$/.test(t.name) ? "At door" : "Free"); }
+function tierLabel(t, kind){ return kind === "door" ? t.name : t.name; }
+
+function tierTable(e){
+  if (!e.tiers.length) return "";
+  if (e.kind === "door") return `<p class="sum"><strong>${esc(e.tiers.map(t=>t.name).join(" · "))}</strong></p>`;
+  const rows = e.tiers.map(t => {
+    const pct = t.total ? Math.min(100, Math.round(100*t.sold/t.total)) : 0;
+    const left = t.total - t.sold;
+    const cls = pct >= 100 ? "full" : pct >= 85 ? "high" : "";
+    const tag = left <= 0 ? `<span class="tag out">SOLD OUT</span>` : (t.total >= 20 && left <= Math.max(5, t.total*0.1)) ? `<span class="tag low">${left} LEFT</span>` : "";
+    return `<tr><td>${esc(t.name)}${tag}</td><td class="num">${tierPrice(t)}</td><td class="num"><strong>${t.sold}</strong> / ${t.total}</td><td style="width:28%"><div class="bar"><span class="${cls}" style="width:${pct}%"></span></div></td></tr>`;
+  }).join("");
+  const sold = e.tiers.reduce((a,t)=>a+t.sold,0);
+  const word = e.kind === "free" ? "RSVPs" : "tickets sold";
+  return `<table><thead><tr><th>${e.kind==="free"?"RSVP":"Ticket tier"}</th><th class="num">Price</th><th class="num">${e.kind==="free"?"RSVPs":"Sold"} / cap</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="total"><strong>${sold}</strong> ${word}</div>`;
+}
+
+function card(e, big){
+  const s = new Date(e.start), en = new Date(e.end);
+  const meta = [];
+  if (e.doors) meta.push(`Doors <strong>${esc(e.doors)}</strong>`);
+  meta.push(`${e.kind==="private"?"Starts":"Show"} <strong>${time(s)}</strong>`);
+  if (e.kind !== "private" && e.kind !== "confirmed") meta.push(`Ends ${time(en)}`);
+  if (e.place) meta.push(`<strong>${esc(e.place)}</strong>`);
+  if (e.ages) meta.push(esc(e.ages));
+  return `<article class="card ${e.kind} ${big?"today":""}">
+    <div class="top">
+      <div class="date"><i>${fmt(s,{weekday:"short"})}</i><b>${fmt(s,{day:"numeric"})}</b><i>${fmt(s,{month:"short"})}</i></div>
+      <div><h3 class="title">${esc(e.name)}</h3><div class="meta">${meta.map(m=>`<span>${m}</span>`).join("")}</div></div>
+    </div>
+    <div class="chips"><span class="chip ${e.kind}">${KIND[e.kind]}</span></div>
+    ${e.summary ? `<p class="sum">${esc(e.summary)}</p>` : ""}
+    ${tierTable(e)}
+  </article>`;
+}
+
+function row(e){
+  const s = new Date(e.start);
+  let tiers = "", right = "";
+  if (e.kind === "ticketed"){
+    tiers = e.tiers.map(t => `${esc(t.name)} <b>${tierPrice(t)}</b> ${t.sold}/${t.total}${t.sold>=t.total?" · SOLD OUT":""}`).join(" &nbsp;·&nbsp; ");
+    right = `<strong>${e.tiers.reduce((a,t)=>a+t.sold,0)}</strong> sold`;
+  } else if (e.kind === "free"){ right = `<strong>${e.tiers.reduce((a,t)=>a+t.sold,0)}</strong> RSVPs`; }
+  else if (e.kind === "door"){ tiers = esc(e.tiers.map(t=>t.name).join(" · ")); }
+  else { tiers = esc(e.summary); right = KIND[e.kind]; }
+  return `<div class="row ${e.kind}">
+    <div class="d">${fmt(s,{weekday:"short", month:"short", day:"numeric"})}<i>${time(s)}${e.place?" · "+esc(e.place):""}</i></div>
+    <div><div class="n">${esc(e.name)}</div>${tiers?`<div class="tiers">${tiers}</div>`:""}</div>
+    <div class="s">${right}</div></div>`;
+}
+
+function render(){
+  const now = new Date();
+  document.getElementById("clock").innerHTML = `${time(now)}<small>${fmt(now,{weekday:"long", month:"long", day:"numeric"})}</small>`;
+  const f = document.getElementById("fresh");
+  if (!DATA.generated) { f.textContent = FEED_OK ? "Loading ticket counts…" : "Can't reach ticket data (" + FEED_ERR + "). Retrying…"; f.className = "fresh" + (FEED_OK ? "" : " stale"); document.getElementById("app").innerHTML = ""; return; }
+  const gen = new Date(DATA.generated);
+  const ageMin = (now - gen) / 6e4;
+  const stale = ageMin > 15 || !FEED_OK;
+  f.textContent = `Ticket counts as of ${fmt(gen,{weekday:"short", hour:"numeric", minute:"2-digit"})}` + (stale ? " · may be out of date" : " · live");
+  f.className = "fresh" + (stale ? " stale" : "");
+
+  const upcoming = DATA.events.filter(e => new Date(e.end) > now || dayKey(new Date(e.start)) === dayKey(now));
+  const today = dayKey(now);
+  const in7 = new Date(now.getTime() + 7*864e5);
+  const t = upcoming.filter(e => dayKey(new Date(e.start)) === today);
+  const week = upcoming.filter(e => dayKey(new Date(e.start)) !== today && new Date(e.start) <= in7);
+  const later = upcoming.filter(e => new Date(e.start) > in7);
+
+  let h = `<h2>Today</h2>` + (t.length ? `<div class="grid">${t.map(e=>card(e,true)).join("")}</div>` : `<div class="empty">Nothing booked at The Foundry today.</div>`);
+  h += `<h2>Next 7 days</h2>` + (week.length ? `<div class="grid">${week.map(e=>card(e,false)).join("")}</div>` : `<div class="empty">Nothing in the next 7 days.</div>`);
+  const months = {};
+  later.forEach(e => { const k = fmt(new Date(e.start),{month:"long", year:"numeric"}); (months[k] = months[k] || []).push(e); });
+  for (const [m, list] of Object.entries(months)) h += `<h2>${m}</h2><div class="later">${list.map(row).join("")}</div>`;
+  document.getElementById("app").innerHTML = h;
+}
+load();
+setInterval(render, 30000);
+setInterval(load, 2 * 60 * 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+</script>
+</body>
+</html>
