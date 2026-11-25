@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Staff Board">
+<meta name="theme-color" content="#15171b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Foundry Staff Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +24,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4}
-body{padding:16px clamp(16px,2.5vw,32px) 40px}
+body{padding:max(16px,env(safe-area-inset-top)) clamp(16px,2.5vw,32px) 40px}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--copper);padding-bottom:12px;margin-bottom:20px}
 h1{font-family:var(--display);font-weight:600;font-size:30px;letter-spacing:.04em;text-transform:uppercase;margin:0}
 h1 span{color:var(--copper)}

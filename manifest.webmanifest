@@ -1,0 +1,21 @@
+{
+ "name": "Foundry Staff Board",
+ "short_name": "Staff Board",
+ "start_url": "./",
+ "scope": "./",
+ "display": "fullscreen",
+ "background_color": "#15171b",
+ "theme_color": "#15171b",
+ "icons": [
+  {
+   "src": "icon-180.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}
